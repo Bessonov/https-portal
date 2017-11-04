@@ -20,6 +20,11 @@ server {
 
     <% if domain.upstream %>
     location / {
+        <% if domain.basic %>
+        auth_basic "password";
+        auth_basic_user_file /run/secrets/<%= domain.basic %>;
+        <% end %>
+
         <% if ENV['DYNAMIC_UPSTREAM'] && ENV['DYNAMIC_UPSTREAM'].downcase == 'true' %>
         set $backend <%= domain.upstream %>;
         proxy_pass $backend;
@@ -40,6 +45,11 @@ server {
     }
     <% else %>
     location / {
+        <% if domain.basic %>
+        auth_basic "password";
+        auth_basic_user_file /run/secrets/<%= domain.basic %>;
+        <% end %>
+
         root   <%= domain.www_root %>;
         index  index.html;
     }

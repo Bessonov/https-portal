@@ -74,8 +74,17 @@ class Domain
     if @upstream
       @upstream
     else
-      match = descriptor.match(/->\s*([^#\s][\S]*)/)
+      match = descriptor.match(/->\s*([^#@\s][\S]*)/)
       @upstream = match[1] if match
+    end
+  end
+
+  def basic
+    if @basic
+      @basic
+    else
+      match = descriptor.match(/\s@(\S+)$/)
+      @basic = match[1] if match
     end
   end
 
