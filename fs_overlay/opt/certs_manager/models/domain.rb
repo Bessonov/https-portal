@@ -17,16 +17,21 @@ class Domain
     File.join(dir, 'signed.crt')
   end
 
+  # For backward compatibility
+  def chained_cert_path
+    File.join(dir, 'chained.crt')
+  end
+
   def ongoing_cert_path
     File.join(dir, 'signed.ongoing.crt')
   end
 
-  def chained_cert_path
-    File.join(dir, 'chained.pem')
-  end
-
   def key_path
     File.join(dir, 'domain.key')
+  end
+
+  def htaccess_path
+    File.join(dir, 'htaccess')
   end
 
   def dir
@@ -38,7 +43,7 @@ class Domain
   end
 
   def ensure_welcome_page
-    return if upstream
+    return if upstream || redirect_target_url
 
     index_html = File.join(www_root, 'index.html')
 
@@ -54,24 +59,26 @@ class Domain
   def ca
     case stage
     when 'production'
-      'https://acme-v01.api.letsencrypt.org'
+      'https://acme-v02.api.letsencrypt.org/directory'
     when 'local'
       nil
     when 'staging'
-      'https://acme-staging.api.letsencrypt.org'
+      'https://acme-staging-v02.api.letsencrypt.org/directory'
     end
   end
 
   def name
-    if @name
+    if defined? @name
       @name
     else
-      @name = descriptor.split('->').first.split(' ').first.strip
+      match = descriptor.match(/^\s*@?(.+?)(?=((->)|(=>)|(\s)|($)))/)
+      domain_with_auth = match[1] if match
+      domain_with_auth.split('@').last
     end
   end
 
   def upstream
-    if @upstream
+    if defined? @upstream
       @upstream
     else
       match = descriptor.match(/->\s*([^#@\s][\S]*)/)
@@ -80,7 +87,7 @@ class Domain
   end
 
   def basic
-    if @basic
+    if defined? @basic
       @basic
     else
       match = descriptor.match(/\s@(\S+)$/)
@@ -88,8 +95,17 @@ class Domain
     end
   end
 
+  def redirect_target_url
+    if defined? @redirect_target_url
+      @redirect_target_url
+    else
+      match = descriptor.match(/=>\s*([^#\s][\S]*)/)
+      @redirect_target_url = match[1] if match
+    end
+  end
+
   def stage
-    if @stage
+    if defined? @stage
       @stage
     else
       match = descriptor.match(/\s#(\S+)$/)
@@ -107,6 +123,40 @@ class Domain
         nil
       end
     end
+  end
+
+  def basic_auth_username
+    if defined? @basic_auth_username
+      @basic_auth_username
+    else
+      match = descriptor.match(/^\s*@?(.+?)(?=((->)|(=>)|(\s)|($)))/)
+      domain_with_auth = match[1] if match
+
+      if domain_with_auth.include?("@")
+        @basic_auth_username = domain_with_auth.split(':').first
+      else
+        @basic_auth_username = nil
+      end
+    end
+  end
+
+  def basic_auth_password
+    if defined? @basic_auth_password
+      @basic_auth_password
+    else
+      match = descriptor.match(/^\s*@?(.+?)(?=((->)|(=>)|(\s)|($)))/)
+      domain_with_auth = match[1] if match
+
+      if domain_with_auth.include?("@")
+        @basic_auth_password = domain_with_auth.split('@').first.split(':').last
+      else
+        @basic_auth_password = nil
+      end
+    end
+  end
+
+  def basic_auth_enabled?
+    basic_auth_username && basic_auth_password
   end
 
   private

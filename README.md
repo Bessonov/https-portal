@@ -19,11 +19,13 @@ Docker Hub page:
   - [Quick Start](#quick-start)
   - [Features](#features)
     - [Test Locally](#test-locally)
+    - [Redirections](#redirections)
     - [Automatic Container Discovery](#automatic-container-discovery)
     - [Hybrid Setup with Non-Dockerized Apps](#hybrid-setup-with-non-dockerized-apps)
     - [Multiple Domains](#multiple-domains)
     - [Serving Static Sites](#serving-static-sites)
     - [Share Certificates with Other Apps](#share-certificates-with-other-apps)
+    - [HTTP Basic Auth](#http-basic-auth)
   - [Advanced Usage](#advanced-usage)
     - [Configure Nginx through Environment Variables](#configure-nginx-through-environment-variables)
     - [Override Nginx Configuration Files](#override-nginx-configuration-files)
@@ -137,6 +139,19 @@ or
 * set up DNSMasq on your computer/router. This method provides more flexibility.
 
 Once you are done testing, you can deploy your application stack to the server.
+
+### Redirections
+
+HTTPS-PORTAL support quick setup for redirections. It is deliberately made to
+support https targets only because otherwise it'd be against the idea of this project.
+
+```yaml
+https-portal:
+  # ...
+  environment:
+    STAGE: local
+    DOMAINS: 'example.com => target.example.com/foo/bar' # Notice it's "=>" instead of the normal "->"
+```
 
 ### Automatic Container Discovery
 
@@ -280,6 +295,20 @@ https-portal:
 
 Now your certificates are available in `/data/ssl_certs` on your host.
 
+### HTTP Basic Auth
+
+You can set up an HTTP Basic Auth easily. It is useful when you put the website
+online but don't want to open it to public until ready.
+
+In your docker-compose file:
+
+```yaml
+https-portal:
+  # ...
+  environment:
+    DOMAINS: 'username:password@example.com -> <upstream>'
+```
+
 ## Advanced Usage
 
 ### Configure Nginx through Environment Variables
@@ -303,6 +332,7 @@ RESOLVER="Your custom solver string"
 PROXY_CONNECT_TIMEOUT=60;
 PROXY_SEND_TIMEOUT=60;
 PROXY_READ_TIMEOUT=60;
+ACCESS_LOG=off;
 ```
 
 You can also add

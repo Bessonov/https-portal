@@ -1,18 +1,9 @@
 require 'open-uri'
 
 module Commands
-  def download_intermediate_cert
-    unless File.exist? intermediate_cert_path
-      File.open(intermediate_cert_path, 'wb') do |saved_file|
-        open('https://letsencrypt.org/certs/lets-encrypt-x3-cross-signed.pem', 'rb') do |read_file|
-          saved_file.write(read_file.read)
-        end
-      end
-    end
-  end
-
-  def chain_keys(domain)
-    system "cat #{domain.signed_cert_path} #{intermediate_cert_path} > #{domain.chained_cert_path}"
+  def chain_certs(domain)
+    # Keeping it for backward compatibility
+    system "test ! -e #{domain.chained_cert_path} && ln -s #{domain.signed_cert_path} #{domain.chained_cert_path}"
   end
 
   def mkdir(domain)
@@ -27,7 +18,11 @@ module Commands
     end
   end
 
-  def intermediate_cert_path
-    '/var/lib/https-portal/intermediate.pem'
+  def generate_ht_access(domains)
+    domains.each do |domain|
+      if domain.basic_auth_enabled?
+        system "htpasswd -bc #{domain.htaccess_path} #{domain.basic_auth_username} #{domain.basic_auth_password}"
+      end
+    end
   end
 end

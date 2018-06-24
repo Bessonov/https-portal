@@ -18,6 +18,11 @@ server {
         return 444;
     }
 
+    <% if domain.basic_auth_enabled? %>
+        auth_basic "Password";
+        auth_basic_user_file <%= domain.htaccess_path %>;
+    <% end %>
+
     <% if domain.upstream %>
     location / {
         <% if domain.basic %>
@@ -42,6 +47,10 @@ server {
         proxy_set_header Connection "Upgrade";
         proxy_read_timeout 2h;
         <% end %>
+    }
+    <% elsif domain.redirect_target_url %>
+    location / {
+      return    301 https://<%= domain.redirect_target_url %>$request_uri;
     }
     <% else %>
     location / {
